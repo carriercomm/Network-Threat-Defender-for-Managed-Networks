@@ -1,0 +1,161 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Network Traffic Defenders</title>
+    <style type="text/css">
+        body
+        {
+            font-family: Arial;
+            font-size: 10pt;
+        }
+        table
+        {
+            border: 1px solid #ccc;
+            border-collapse: collapse;
+        }
+        table th
+        {
+            background-color: #F7F7F7;
+            color: #333;
+            font-weight: bold;
+        }
+        table th, table td
+        {
+            padding: 5px;
+            border-color: #ccc;
+			width: 194px;
+			height: 70px;
+			font-weight: bold;
+        }
+    </style>
+	<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+	        <script type="text/javascript">
+	var toShow = new Array();
+	
+            $( document ).ready(function() {
+				$(document).getDocs();
+            });
+			
+			$.fn.getDocs = function() {
+			$('#logarea').val('');
+			toShow = [];
+               $.ajax({
+			   url: 'http://127.0.0.1:5984/trafficanalyzer/_all_docs',
+			   type: 'get',
+			   dataType: 'json',
+			   success: function(data) {
+			   var records = data.total_rows;
+			   var offset = data.offset;
+			   var i;
+				  for (i=0;i<records;i++){
+					$(document).getData(data.rows[i].id);
+				  }
+				  setTimeout(drawChart, 1000);
+			  },
+			  error:function(jqXHR, textStatus, errorThrown){
+				alert(errorThrown);
+			  },
+			  reduce: false
+				});
+			}
+			setInterval(function(){$(document).getDocs()}, 600000);
+			
+			$.fn.getData = function(key) {
+			 $.ajax({ 
+			   url: 'http://127.0.0.1:5984/trafficanalyzer/'+key,
+			   type: 'get',
+			   dataType: 'json',
+			   success: function(data) {
+			   toShow[toShow.length] = data;
+			   var sourceIP = data.elements.element[0].sourceIP;
+			   var attempts = data.elements.element[0].attempts;	
+			  },
+				error:function(jqXHR, textStatus, errorThrown){
+				alert(errorThrown);
+				},
+				reduce: false
+			  });
+			}
+
+			
+    function drawChart() {
+ 
+	  var synIps = new Array();
+	
+	        $.each(toShow, function (i, row) {
+				$.each(toShow[i].elements.element, function (k, bow) {
+				console.log($.inArray( toShow[i].elements.element[k].sourceIP, synIps ));
+				if(($.inArray( toShow[i].elements.element[k].sourceIP, synIps )== -1)){
+					synIps.push(toShow[i].elements.element[k].sourceIP);
+					}
+				});
+          });
+		  $.each(toShow, function (n, row) {
+				$.each(toShow[n].elements.element, function (s, bow) {
+					if((toShow[n].elements.element[s].thresholdExceeded == true) && (toShow[n].elements.element[s].protocol == 'ICMP')){
+						$('#dvTable table tbody tr td').each(function() {
+							if($(this).html()== String(toShow[n].elements.element[s].sourceIP)){   
+								$(this).css("background-color", "blue");
+								}
+						});
+					}
+					if((toShow[n].elements.element[s].thresholdExceeded == true) && (toShow[n].elements.element[s].protocol == 'SYN')){
+						$('#dvTable table tbody tr td').each(function() {
+							if($(this).html()== String(toShow[n].elements.element[s].sourceIP)){   
+								$(this).css("background-color", "red");
+								}
+						});
+					}
+				});
+          });
+		  
+		    //Build an array containing IPAddress records.
+            var customers = new Array();
+            customers.push(["Serial Number", "IPAddress"]);
+			 $.each(synIps, function (u, cow) {
+				customers.push([u, synIps[u]]);
+			});
+
+            //Create a HTML Table element.
+            var table = document.createElement("TABLE");
+            table.border = "1";
+
+            //Get the count of columns.
+            var columnCount = customers[0].length;
+
+            //Add the header row.
+            var row = table.insertRow(-1);
+            for (var i = 0; i < columnCount; i++) {
+                var headerCell = document.createElement("TH");
+                headerCell.innerHTML = customers[0][i];
+                row.appendChild(headerCell);
+            }
+
+            //Add the data rows.
+            for (var i = 1; i < customers.length; i++) {
+                row = table.insertRow(-1);
+                for (var j = 0; j < columnCount; j++) {
+                    var cell = row.insertCell(-1);
+                    cell.innerHTML = customers[i][j];
+                }
+            }
+
+            var dvTable = document.getElementById("dvTable");
+            dvTable.innerHTML = "";
+            dvTable.appendChild(table);
+   }
+   
+        </script>
+</head>
+<body>
+    <hr />
+	<h2>Network Traffic Defenders</h2>
+    <div id="dvTable" style="height: 500px; width: 500px;">
+    </div>
+	 <div id="dvTable1">
+    </div>
+	<div>
+	<a href="threshold_logs.html">Logs</a>
+	</div>
+</body>
+</html>

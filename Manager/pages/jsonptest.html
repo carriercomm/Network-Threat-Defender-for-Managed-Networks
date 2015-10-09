@@ -1,0 +1,116 @@
+<html>
+    <head>
+        <script src="../js/jquery.min.js"></script>
+		 <script src="https://www.google.com/jsapi"></script>
+        <script type="text/javascript">
+	var toShow = new Array();
+	
+            function getstarted() {
+               $.ajax({ 
+			   url: 'http://127.0.0.1:5984/trafficanalyzer/_all_docs',
+			   type: 'get',
+			   dataType: 'json',
+			   success: function(data) {
+			   var records = data.total_rows;
+			   var offset = data.offset;
+			   var i;
+				  for (i=0;i<records;i++){
+					$(document).getData(data.rows[i].id);
+				  }
+				  setTimeout(drawChart, 1000);
+			  },
+			  error:function(jqXHR, textStatus, errorThrown){
+				alert(errorThrown);
+			  },
+			  reduce: false
+			});
+            }
+			setInterval(function(){getstarted()}, 5000);
+			
+			$.fn.getData = function(key) {
+			 $.ajax({ 
+			   url: 'http://127.0.0.1:5984/trafficanalyzer/'+key,
+			   type: 'get',
+			   dataType: 'json',
+			   success: function(data) {
+			   toShow[toShow.length] = data;
+			   var sourceIP = data.elements.element[0].sourceIP;
+			   var attempts = data.elements.element[0].attempts;	
+			  },
+				error:function(jqXHR, textStatus, errorThrown){
+				alert(errorThrown);
+				},
+				reduce: false
+			  });
+			}
+	google.load('visualization', '1.1', {packages: ['line']});
+    google.setOnLoadCallback(getstarted);
+
+    function drawChart() {
+
+      var data = new google.visualization.DataTable();
+	  var hashmap ={};
+	  
+	  var synIps = new Array();
+	  var tempList = new Array();
+	  var dataTableRow = new Array();
+	 // var synIps = new Array();
+		console.log("length is "+toShow.length);
+        data.addColumn('datetime', 'Time');
+	
+	        $.each(toShow, function (i, row) {
+				$.each(toShow[i].elements.element, function (k, bow) {
+				console.log($.inArray( toShow[i].elements.element[k].sourceIP, synIps ));
+				if(($.inArray( toShow[i].elements.element[k].sourceIP, synIps )== -1)){
+					synIps.push(toShow[i].elements.element[k].sourceIP);
+					console.log("The array instance is " +i +" and the elementnumber if"+ k +"  the sourece ip is "+toShow[i].elements.element[k].sourceIP+ "The protocol is "+toShow[i].elements.element[k].protocol);
+					}
+				});
+          });
+		   $.each(synIps, function (u, cow) {
+				data.addColumn('number',synIps[u]);
+			});
+			$.each(toShow, function (index, row) {
+				dataTableRow = [];
+				dataTableRow.push( new Date(toShow[index].timestamp));
+				$.each(toShow[index].elements.element, function (kindex, bow) {
+					if(toShow[index].elements.element[kindex].protocol == 'ICMP'){
+						var hashIP = String(toShow[index].elements.element[kindex].sourceIP);
+						if(hashmap[hashIP] == undefined){
+							hashmap[hashIP] = toShow[index].elements.element[kindex].attempts;
+							}
+						else{
+							hashmap[hashIP] = toShow[index].elements.element[kindex].attempts;
+							}
+						console.log("attempts" +toShow[index].elements.element[kindex].attempts + "Source Ip address is"+toShow[index].elements.element[kindex].sourceIP+ "Procol "+toShow[index].elements.element[kindex].protocol);
+				}
+								
+				});
+				$.each(synIps, function (u, cow) {
+					if(hashmap[String(synIps[u])] == undefined){
+						dataTableRow.push(0);
+					}else
+						dataTableRow.push(hashmap[String(synIps[u])]);
+				});
+				data.addRows([dataTableRow]);
+			});
+
+      var options = {
+        chart: {
+          title: 'SYN Procol Data analysis',
+          subtitle: 'Checking the Threshold'
+        },
+        width: 900,
+        height: 500
+      };
+
+      var chart = new google.charts.Line(document.getElementById('linechart_material'));
+
+      chart.draw(data, options);
+    }
+        </script>
+    </head>
+  <body>
+    <div id="linechart_material"></div>
+  </body>
+</html>

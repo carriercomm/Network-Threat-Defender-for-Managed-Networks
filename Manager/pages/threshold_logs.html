@@ -1,0 +1,145 @@
+<html>
+    <head>
+	 <style type="text/css">
+        body
+        {
+            font-family: Arial;
+            font-size: 10pt;
+        }
+        table
+        {
+            border: 1px solid #ccc;
+            border-collapse: collapse;
+        }
+        table th
+        {
+            background-color: #F7F7F7;
+            color: #333;
+            font-weight: bold;
+        }
+        table th, table td
+        {
+            padding: 5px;
+            border-color: #ccc;
+			width: 194px;
+			height: 70px;
+			font-weight: bold;
+        }
+		#submit {
+		  width: 100px;
+		  height: 100px;
+		  position: relative;
+		}
+    </style>
+        <script type="text/javascript" src="../js/jquery.min.js"></script>
+        <script type="text/javascript">
+	var toShow = new Array();
+	
+            $( document ).ready(function() {
+				$(document).getDocs();
+            });
+			
+			$.fn.getDocs = function() {
+			$('#logarea').val('');
+			toShow = [];
+               $.ajax({
+			   url: 'http://127.0.0.1:5984/trafficanalyzer-dev/_all_docs',
+			   type: 'get',
+			   dataType: 'json',
+			   success: function(data) {
+			   var records = data.total_rows;
+			   var offset = data.offset;
+			   var i;
+				  for (i=0;i<records;i++){
+					$(document).getData(data.rows[i].id);
+				  }
+				  setTimeout(drawChart, 1000);
+			  },
+			  error:function(jqXHR, textStatus, errorThrown){
+				alert(errorThrown);
+			  },
+			  reduce: false
+				});
+			}
+			setInterval(function(){$(document).getDocs()}, 40000);
+			
+			$.fn.getData = function(key) {
+			 $.ajax({ 
+			   url: 'http://127.0.0.1:5984/trafficanalyzer-dev/'+key,
+			   type: 'get',
+			   dataType: 'json',
+			   success: function(data) {
+			   toShow[toShow.length] = data;
+			   var sourceIP = data.elements.element[0].sourceIP;
+			   var attempts = data.elements.element[0].attempts;	
+			  },
+				error:function(jqXHR, textStatus, errorThrown){
+				alert(errorThrown);
+				},
+				reduce: false
+			  });
+			}
+
+    function drawChart() {
+ 
+	  var synIps = new Array();
+	
+	        $.each(toShow, function (i, row) {
+				$.each(toShow[i].elements.element, function (k, bow) {
+				console.log($.inArray( toShow[i].elements.element[k].sourceIP, synIps ));
+				if(($.inArray( toShow[i].elements.element[k].sourceIP, synIps )== -1)){
+					synIps.push(toShow[i].elements.element[k].sourceIP);
+					console.log("The array instance is " +i +" and the elementnumber if"+ k +"  the sourece ip is "+toShow[i].elements.element[k].sourceIP+ "The protocol is "+toShow[i].elements.element[k].protocol);
+					}
+				});
+          });
+		   $.each(synIps, function (u, cow) {
+				//alert("Maki Ips :"+synIps[u]);
+			});
+			$.each(toShow, function (index, row) {
+			
+				$.each(toShow[index].elements.element, function (kindex, bow) {
+					if(toShow[index].elements.element[kindex].protocol == 'SYN' && toShow[index].elements.element[kindex].thresholdExceeded == true){
+						 $('#logarea').val($('#logarea').val()+'\n'+'SYN: '+toShow[index].elements.element[kindex].sourceIP+' has crossed the threshold limit('+toShow[index].elements.element[kindex].attempts+')');
+				}
+									if(toShow[index].elements.element[kindex].protocol == 'ICMP' && toShow[index].elements.element[kindex].thresholdExceeded == true){
+						 $('#logarea').val($('#logarea').val()+'\n'+'ICMP:'+toShow[index].elements.element[kindex].sourceIP+' has crossed the threshold limit('+toShow[index].elements.element[kindex].attempts+')');
+				}
+								
+				});
+			});
+    }
+        </script>
+    </head>
+  <body>
+  	<h2>Network Traffic Defenders Attack Logs</h2>
+	<div>
+	<textarea rows="6" cols="50" id="logarea" style="height: 500px; width: 500px;"></textarea>
+	</div>
+	<div id="submit">
+	<script>
+	//var shell = WScript.CreateObject("WScript.Shell");
+	</script>
+	
+	<table>
+		<tbody>
+			<tr><td><input type="text" id="ipAddress" name="fname"></td><td><button onclick = blockIP("ipAddress")>Block</button></td><td><button onclick = unblockIP("ipAddress")>Unblock</button></td></tr>
+		</tbody>
+	</table>
+	<script>
+		function blockIP(ipaddress) {
+			var blockIPCommand = 'ssh 10.10.20.10 "echo hadoop | sudo -S iptables -I FORWARD -d ' + document.getElementById(ipaddress).value + ' -j DROP"';
+			alert(blockIPCommand);
+			
+		}
+		
+		function unblockIP(ipaddress) {
+			var unblockIPCommand = 'ssh 10.10.20.10 "echo hadoop | sudo -S iptables -D FORWARD -d ' + document.getElementById(ipaddress).value + ' -j DROP"';
+			alert(unblockIPCommand);
+			//exec(unblockIPCommand);
+		}
+	</script>
+	<a href="Network.html"> <-Table Data</a>
+	</div>
+  </body>
+</html>
