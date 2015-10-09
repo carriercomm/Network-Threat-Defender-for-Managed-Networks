@@ -1,0 +1,2 @@
+# Network-Threat-Defender-for-Managed-Networks
+Network traffic information generated from tools such as tcpdump or mirrored switch ports can be analysed for malicious activity. However the processing demands to analyse raw traffic data may be intensive- especially when one considers analysing all of the data coming into an enterprise with geographically redundant data centers. Therefore we propose using the real-time, distributed processing capabilities of Apache Storm to handle such a task.
